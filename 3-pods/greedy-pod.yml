@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: greedy-pod
+spec:
+  containers:
+  - name: greedy-pod
+    image: stefanprodan/podinfo
+    resources:
+      requests:
+        cpu: 4
+        memory: 4Gi

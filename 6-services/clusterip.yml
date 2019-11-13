@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: simple-cluster-ip
+spec:
+  selector:
+    app: simple
+  ports:
+    - protocol: TCP
+      port: 9898
+      targetPort: 9898

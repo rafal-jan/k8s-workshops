@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: resources-pod
+spec:
+  containers:
+  - name: resources-pod
+    image: stefanprodan/podinfo
+    resources:
+      limits:
+        cpu: 10m
+        memory: 128Mi
+      requests:
+        cpu: 1m
+        memory: 16Mi
