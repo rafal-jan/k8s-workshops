@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: simple
+  name: env-deploy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple
+  template:
+    metadata:
+      labels:
+        app: simple
+    spec:
+      containers:
+      - name: simple-pod
+        image: stefanprodan/podinfo
+        env:
+        - name: TEST
+          value: success
+        - name: KEY1
+          valueFrom:
+            configMapKeyRef:
+              key: key1
+              name: simple-cm

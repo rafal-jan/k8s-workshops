@@ -1,123 +1,89 @@
 # Deployments
 
-## Creating a deployment using imperative API
+## Creating a deployment
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl create deployment first-deploy --image stefanprodan/podinfo --dry-run -o yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  creationTimestamp: null
-  labels:
-    app: first-deploy
-  name: first-deploy
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: first-deploy
-  strategy: {}
-  template:
-    metadata:
-      creationTimestamp: null
-      labels:
-        app: first-deploy
-    spec:
-      containers:
-      - image: stefanprodan/podinfo
-        name: podinfo
-        resources: {}
-status: {}
-```
-
-## Creating a deployment using declarative API
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl apply -f .\4-deployments\deploy.yml
+~/k8s-workshops $ kubectl apply -f 4-deployments/deploy.yml
 deployment.apps/simple-deploy created
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get deploy
-NAME            READY   UP-TO-DATE   AVAILABLE   AGE
-simple-deploy   1/1     1            1           51s
-```
+~/k8s-workshops $ kubectl get deploy,rs,pod
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/simple-deploy   1/1     1            1           8s
 
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get rs
-NAME                       DESIRED   CURRENT   READY   AGE
-simple-deploy-7cf9979c88   1         1         1       55s
-```
+NAME                                       DESIRED   CURRENT   READY   AGE
+replicaset.apps/simple-deploy-7cf9979c88   1         1         1       8s
 
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get po
-NAME                             READY   STATUS    RESTARTS   AGE
-simple-deploy-7cf9979c88-2vght   1/1     Running   0          57s
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/simple-deploy-7cf9979c88-sbbfp   1/1     Running   0          8s
 ```
 
 ## Desired state management
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl delete pod simple-deploy-7cf9979c88-2vght
-pod "simple-deploy-7cf9979c88-2vght" deleted
+~/k8s-workshops $ kubectl delete pod simple-deploy-7cf9979c88-sbbfp
+pod "simple-deploy-7cf9979c88-sbbfp" deleted
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get pods
+~/k8s-workshops $ kubectl get pods
 NAME                             READY   STATUS    RESTARTS   AGE
-simple-deploy-7cf9979c88-bptmr   1/1     Running   0          11s
+simple-deploy-7cf9979c88-p6hvt   1/1     Running   0          17s
 ```
 
 ## Scaling a deployment
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl scale deploy simple-deploy --replicas=2
+~/k8s-workshops $ kubectl scale deploy simple-deploy --replicas=2
 deployment.apps/simple-deploy scaled
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get deploy
-NAME            READY   UP-TO-DATE   AVAILABLE   AGE
-simple-deploy   2/2     2            2           2m49s
-```
+~/k8s-workshops $ kubectl get deploy,rs,pod
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/simple-deploy   2/2     2            2           118s
 
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get rs
-NAME                       DESIRED   CURRENT   READY   AGE
-simple-deploy-7cf9979c88   2         2         2       3m
-```
+NAME                                       DESIRED   CURRENT   READY   AGE
+replicaset.apps/simple-deploy-7cf9979c88   2         2         2       118s
 
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get pods
-NAME                             READY   STATUS    RESTARTS   AGE
-simple-deploy-7cf9979c88-42dj5   1/1     Running   0          39s
-simple-deploy-7cf9979c88-bptmr   1/1     Running   0          91s
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/simple-deploy-7cf9979c88-ftftw   1/1     Running   0          13s
+pod/simple-deploy-7cf9979c88-p6hvt   1/1     Running   0          87s
+
 ```
 
 ## Rolling back a deployment
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl rollout history deploy simple-deploy
+~/k8s-workshops $ kubectl rollout history deploy simple-deploy
 deployment.apps/simple-deploy
 REVISION  CHANGE-CAUSE
 1         <none>
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl set image deploy simple-deploy simple-pod=k8s.gcr.io/liveness
-deployment.apps/simple-deploy image updated
+~/k8s-workshops $ kubectl apply -f 4-deployments/deploy-v2.yml
+deployment.apps/simple-deploy configured
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get pods
-NAME                             READY   STATUS                 RESTARTS   AGE
-simple-deploy-7cf9979c88-7cxfb   1/1     Running                0          12m
-simple-deploy-7cf9979c88-mjmcm   1/1     Running                0          13m
-simple-deploy-d848b455-8w24p     0/1     CreateContainerError   0          30s
+~/k8s-workshops $ kubectl get deploy,rs,po
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/simple-deploy   2/2     1            2           3m3s
+
+NAME                                       DESIRED   CURRENT   READY   AGE
+replicaset.apps/simple-deploy-7cf9979c88   2         2         2       3m3s
+replicaset.apps/simple-deploy-d789858b     1         1         0       36s
+
+NAME                                 READY   STATUS         RESTARTS   AGE
+pod/simple-deploy-7cf9979c88-ftftw   1/1     Running        0          78s
+pod/simple-deploy-7cf9979c88-p6hvt   1/1     Running        0          2m32s
+pod/simple-deploy-d789858b-k8wjv     0/1     ErrImagePull   0          36s
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl rollout history deploy simple-deploy
+~/k8s-workshops $ kubectl rollout history deploy simple-deploy
 deployment.apps/simple-deploy
 REVISION  CHANGE-CAUSE
 1         <none>
@@ -125,21 +91,36 @@ REVISION  CHANGE-CAUSE
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl rollout undo deploy simple-deploy --to-revision=1
+~/k8s-workshops $ kubectl rollout undo deploy simple-deploy --to-revision=1
 deployment.apps/simple-deploy rolled back
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get pods
-NAME                             READY   STATUS    RESTARTS   AGE
-simple-deploy-7cf9979c88-7cxfb   1/1     Running   0          13m
-simple-deploy-7cf9979c88-mjmcm   1/1     Running   0          14m
+~/k8s-workshops $ kubectl get deploy,rs,po
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/simple-deploy   2/2     2            2           3m58s
+
+NAME                                       DESIRED   CURRENT   READY   AGE
+replicaset.apps/simple-deploy-7cf9979c88   2         2         2       3m58s
+replicaset.apps/simple-deploy-d789858b     0         0         0       91s
+
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/simple-deploy-7cf9979c88-ftftw   1/1     Running   0          2m13s
+pod/simple-deploy-7cf9979c88-p6hvt   1/1     Running   0          3m27s
+```
+
+```console
+~/k8s-workshops $ kubectl rollout history deploy simple-deploy
+deployment.apps/simple-deploy
+REVISION  CHANGE-CAUSE
+2         <none>
+3         <none>
 ```
 
 ## Deleting a deployment
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl delete deploy simple-deploy
+~/k8s-workshops $ kubectl delete deploy simple-deploy
 deployment.apps "simple-deploy" deleted
 ```
 
@@ -151,6 +132,6 @@ simple-deploy-7cf9979c88-mjmcm   1/1     Terminating   0          16m
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get pods
+~/k8s-workshops $ kubectl get deploy,rs,po
 No resources found in default namespace.
 ```
