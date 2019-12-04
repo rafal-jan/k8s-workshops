@@ -1,5 +1,71 @@
 # Services
 
+## Readiness probe
+
+```console
+PS C:\dev\projects\kubernetes-workshops> kubectl apply -f .\3-pods\readiness-pod.yml
+pod/readiness-pod created
+```
+
+```console
+PS C:\dev\projects\kubernetes-workshops> kubectl get po -w
+NAME            READY   STATUS    RESTARTS   AGE
+readiness-pod   0/1     Running   0          3s
+readiness-pod   1/1     Running   0          8s
+```
+
+```console
+PS C:\dev\projects\kubernetes-workshops> kubectl exec -it readiness-pod -- curl localhost:9898/readyz
+{
+  "status": "OK"
+}
+```
+
+```console
+PS C:\dev\projects\kubernetes-workshops> kubectl exec -it readiness-pod -- curl -X POST localhost:9898/readyz/disable
+```
+
+```console
+PS C:\dev\projects\kubernetes-workshops> kubectl exec -it readiness-pod -- curl localhost:9898/readyz -v
+*   Trying 127.0.0.1:9898...
+* TCP_NODELAY set
+* Connected to localhost (127.0.0.1) port 9898 (#0)
+> GET /readyz HTTP/1.1
+> Host: localhost:9898
+> User-Agent: curl/7.66.0
+> Accept: */*
+>
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 503 Service Unavailable
+< Date: Wed, 13 Nov 2019 20:18:16 GMT
+< Content-Length: 0
+<
+* Connection #0 to host localhost left intact
+```
+
+```console
+PS C:\dev\projects\kubernetes-workshops> kubectl get po -w
+NAME            READY   STATUS    RESTARTS   AGE
+readiness-pod   1/1     Running   0          81s
+readiness-pod   0/1     Running   0          93s
+```
+
+```console
+PS C:\dev\projects\kubernetes-workshops> kubectl exec -it readiness-pod -- curl -X POST localhost:9898/readyz/enable
+```
+
+```console
+PS C:\dev\projects\kubernetes-workshops> kubectl get po -w
+NAME            READY   STATUS    RESTARTS   AGE
+readiness-pod   0/1     Running   0          109s
+readiness-pod   1/1     Running   0          113s
+```
+
+```console
+PS C:\dev\projects\kubernetes-workshops> kubectl delete pod readiness-pod
+pod "readiness-pod" deleted
+```
+
 ## Expose a deployment
 
 ```console

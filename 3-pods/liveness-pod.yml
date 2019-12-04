@@ -5,13 +5,11 @@ metadata:
 spec:
   containers:
   - name: liveness-pod
-    image: k8s.gcr.io/liveness
-    args:
-    - /server
+    image: stefanprodan/podinfo
     livenessProbe:
       httpGet:
-        path: /healthz
-        port: 8080
+        path: /readyz
+        port: 9898
       initialDelaySeconds: 3
       periodSeconds: 3
       successThreshold: 1
