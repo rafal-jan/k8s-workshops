@@ -1,7 +1,8 @@
 ---
 marp: true
-theme: uncover
-_class: invert
+theme: gaia
+class: lead
+auto-scaling: code
 ---
 
 # **kubectl**

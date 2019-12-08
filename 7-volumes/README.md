@@ -3,66 +3,136 @@
 ## Config map volumes
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl apply -f .\7-volumes\cm-vol-pod.yml
-pod/cm-vol-pod created
+~/k8s-workshops $ kubectl apply -f 7-volumes/configmap-volume.yml
+pod/configmap-volume created
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get pods
-NAME        READY   STATUS    RESTARTS   AGE
-cm-vol-pod   1/1     Running   0          4s
+~/k8s-workshops $ kubectl get pods
+NAME               READY   STATUS    RESTARTS   AGE
+configmap-volume   1/1     Running   0          6s
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl exec -it cm-vol-pod -- curl localhost:9898/configs
+~/k8s-workshops $ kubectl exec -it configmap-volume -- curl localhost:9898/configs
 {
-  "input.json": "{\r\n    \"key-from-file-1\": \"value-from-file-1\",\r\n    \"key-from-file-2\": \"value-from-file-2\"\r\n}"
+  "input.json": "{\n    \"key-from-file-1\": \"value-from-file-1\",\n    \"key-from-file-2\": \"value-from-file-2\"\n}"
 }
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl delete pod cm-vol-pod
-pod "cm-vol-pod" deleted
+~/k8s-workshops $ kubectl exec -it configmap-volume -- cat /config/input.json
+{
+    "key-from-file-1": "value-from-file-1",
+    "key-from-file-2": "value-from-file-2"
+}
+```
+
+```console
+~/k8s-workshops $ kubectl delete pod configmap-volume
+pod "configmap-volume" deleted
 ```
 
 ## Host path volumes
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> minikube ssh
+~/k8s-workshops $ kubectl apply -f 7-volumes/emptydir-volume.yml
+deployment.apps/volume created
+```
+
+```console
+~/k8s-workshops $ kubectl get pods
+NAME                      READY   STATUS    RESTARTS   AGE
+volume-848977d55b-5rlzm   1/1     Running   0          37s
+```
+
+```console
+~/k8s-workshops $ kubectl exec -it volume-848977d55b-5rlzm -- curl -X POST -d "test" localhost:9898/store
+{
+  "hash": "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3"
+}
+```
+
+```console
+~/k8s-workshops $ kubectl exec -it volume-848977d55b-5rlzm -- curl localhost:9898/store/a94a8fe5ccb19ba61c4c0873d391e987982fbbd3
+test
+```
+
+```console
+~/k8s-workshops $ kubectl delete pod volume-848977d55b-5rlzm
+pod "volume-848977d55b-5rlzm" deleted
+```
+
+```console
+~/k8s-workshops $ kubectl get pods
+NAME                      READY   STATUS    RESTARTS   AGE
+volume-848977d55b-rkf46   1/1     Running   0          12s
+```
+
+```console
+~/k8s-workshops $ kubectl exec -it volume-848977d55b-rkf46 -- curl localhost:9898/store/a94a8fe5ccb19ba61c4c0873d391e987982fbbd3
+{
+  "code": 500,
+  "message": "reading file failed"
+}
+```
+
+```console
+~/k8s-workshops $ minikube ssh
                          _             _
             _         _ ( )           ( )
-  ___ ___  (_)  ___  (_)| |/')  _   _ | |_      __
+  ___ ___  (_)  ___  (_)| |/')  _   _ | |_      __  
 /' _ ` _ `\| |/' _ `\| || , <  ( ) ( )| '_`\  /'__`\
 | ( ) ( ) || || ( ) || || |\`\ | (_) || |_) )(  ___/
 (_) (_) (_)(_)(_) (_)(_)(_) (_)`\___/'(_,__/'`\____)
 
-$ pwd
-/home/docker
-$ mkdir config
-$ echo "key1: value1" > config/test.yml
+$ mkdir persistent-volume
+$ chmod 777 persistent-volume/
 $ exit
 logout
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl apply -f .\7-volumes\hp-vol-pod.yml
-pod/hp-vol-pod created
+~/k8s-workshops $ kubectl apply -f 7-volumes/hostpath-volume.yml
+deployment.apps/volume configured
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get pods
-NAME        READY   STATUS    RESTARTS   AGE
-hp-vol-pod   1/1     Running   0          5s
+~/k8s-workshops $ kubectl get pods
+NAME                      READY   STATUS    RESTARTS   AGE
+volume-667657496d-qnmlf   1/1     Running   0          11s
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl exec -it hp-vol-pod -- curl localhost:9898/configs
+~/k8s-workshops $ kubectl exec -it volume-667657496d-qnmlf -- curl -X POST -d "test" localhost:9898/store
 {
-  "test.yml": "key1: value1\n"
+  "hash": "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3"
 }
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl delete pod hp-vol-pod
-pod "hp-vol-pod" deleted
+~/k8s-workshops $ kubectl exec -it volume-667657496d-qnmlf -- curl localhost:9898/store/a94a8fe5ccb19ba61c4c0873d391e987982fbbd3
+test
+```
+
+```console
+~/k8s-workshops $ kubectl delete pod volume-667657496d-qnmlf
+pod "volume-667657496d-qnmlf" deleted
+```
+
+```console
+~/k8s-workshops $ kubectl get pods
+NAME                      READY   STATUS    RESTARTS   AGE
+volume-667657496d-6z5gl   1/1     Running   0          17s
+```
+
+```console
+~/k8s-workshops $ kubectl exec -it volume-667657496d-6z5gl -- curl localhost:9898/store/a94a8fe5ccb19ba61c4c0873d391e987982fbbd3
+test
+```
+
+```console
+~/k8s-workshops $ minikube ssh -- ls -l /home/docker/persistent-volume
+total 4
+-rw-r--r-- 1 100 65533 4 Dec  8 19:30 a94a8fe5ccb19ba61c4c0873d391e987982fbbd3
 ```

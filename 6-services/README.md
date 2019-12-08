@@ -1,223 +1,195 @@
 # Services
 
+## ClusterIP
+
+```console
+~/k8s-workshops $ kubectl apply -f 4-deployments/deploy.yml
+deployment.apps/simple-deploy created
+```
+
+```console
+~/k8s-workshops $ kubectl scale deploy simple-deploy --replicas=2
+deployment.apps/simple-deploy scaled
+```
+
+```console
+~/k8s-workshops $ kubectl get pods -o wide
+NAME                             READY   STATUS    RESTARTS   AGE   IP           NODE       NOMINATED NODE   READINESS GATES
+simple-deploy-7cf9979c88-28x6n   1/1     Running   0          27s   172.17.0.4   minikube   <none>           <none>
+simple-deploy-7cf9979c88-ww95j   1/1     Running   0          23s   172.17.0.5   minikube   <none>           <none>
+```
+
+```console
+~/k8s-workshops $ kubectl apply -f 3-pods/pod.yml
+pod/simple-pod created
+```
+
+```console
+~/k8s-workshops $ kubectl apply -f 6-services/clusterip.yml
+service/simple-cluster-ip created
+```
+
+```console
+~/k8s-workshops $ kubectl get services
+NAME                TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+kubernetes          ClusterIP   10.96.0.1        <none>        443/TCP    3d23h
+simple-cluster-ip   ClusterIP   10.102.155.244   <none>        9898/TCP   7s
+```
+
+```console
+~/k8s-workshops $ kubectl get svc simple-cluster-ip -o yaml
+apiVersion: v1
+kind: Service
+...
+```
+
+```console
+~/k8s-workshops $ kubectl get endpoints
+NAME                ENDPOINTS                         AGE
+kubernetes          192.168.99.106:8443               3d23h
+simple-cluster-ip   172.17.0.4:9898,172.17.0.5:9898   30s
+```
+
+```console
+~/k8s-workshops $ kubectl describe endpoints simple-cluster-ip
+Name:         simple-cluster-ip
+...
+Subsets:
+  Addresses:          172.17.0.4,172.17.0.5
+  NotReadyAddresses:  <none>
+...
+```
+
+```console
+~/k8s-workshops $ kubectl exec -it simple-pod -- curl simple-cluster-ip:9898
+{
+  "hostname": "simple-deploy-7cf9979c88-ww95j",
+...
+```
+
+```console
+~/k8s-workshops $ kubectl exec -it simple-pod -- curl simple-cluster-ip:9898
+{
+  "hostname": "simple-deploy-7cf9979c88-28x6n",
+...
+```
+
+```console
+~/k8s-workshops $ kubectl delete deployment simple-deploy
+deployment.apps "simple-deploy" deleted
+```
+
 ## Readiness probe
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl apply -f .\3-pods\readiness-pod.yml
-pod/readiness-pod created
+~/k8s-workshops $ kubectl apply -f 6-services/readiness-deploy.yml
+deployment.apps/simple-deploy created
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get po -w
-NAME            READY   STATUS    RESTARTS   AGE
-readiness-pod   0/1     Running   0          3s
-readiness-pod   1/1     Running   0          8s
+~/k8s-workshops $ kubectl get po -w
+NAME         READY   STATUS    RESTARTS   AGE
+...
+simple-deploy-7d7ffbb88-x9l4s   0/1     Running             0          4s
+simple-deploy-7d7ffbb88-x9l4s   1/1     Running             0          12s
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl exec -it readiness-pod -- curl localhost:9898/readyz
+~/k8s-workshops $ kubectl exec -it simple-deploy-7d7ffbb88-x9l4s -- curl localhost:9898/readyz
 {
   "status": "OK"
 }
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl exec -it readiness-pod -- curl -X POST localhost:9898/readyz/disable
+~/k8s-workshops $ kubectl exec -it simple-deploy-7d7ffbb88-x9l4s -- curl -X POST localhost:9898/readyz/disable
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl exec -it readiness-pod -- curl localhost:9898/readyz -v
-*   Trying 127.0.0.1:9898...
-* TCP_NODELAY set
-* Connected to localhost (127.0.0.1) port 9898 (#0)
-> GET /readyz HTTP/1.1
-> Host: localhost:9898
-> User-Agent: curl/7.66.0
-> Accept: */*
->
-* Mark bundle as not supporting multiuse
+~/k8s-workshops $ kubectl get po -w
+NAME                            READY   STATUS    RESTARTS   AGE
+simple-deploy-7d7ffbb88-x9l4s   1/1     Running   0          5m
+simple-deploy-7d7ffbb88-x9l4s   0/1     Running   0          5m32s
+```
+
+```console
+~/k8s-workshops $ kubectl exec -it simple-deploy-7d7ffbb88-x9l4s -- curl localhost:9898/readyz -v
+...
 < HTTP/1.1 503 Service Unavailable
-< Date: Wed, 13 Nov 2019 20:18:16 GMT
+< Date: Sun, 08 Dec 2019 18:30:41 GMT
 < Content-Length: 0
 <
 * Connection #0 to host localhost left intact
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get po -w
-NAME            READY   STATUS    RESTARTS   AGE
-readiness-pod   1/1     Running   0          81s
-readiness-pod   0/1     Running   0          93s
+~/k8s-workshops $ kubectl describe endpoints simple-cluster-ip
+Name:         simple-cluster-ip
+...
+Subsets:
+  Addresses:          <none>
+  NotReadyAddresses:  172.17.0.4
+...
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl exec -it readiness-pod -- curl -X POST localhost:9898/readyz/enable
+~/k8s-workshops $ kubectl exec -it simple-pod -- curl simple-cluster-ip:9898
+curl: (7) Failed to connect to simple-cluster-ip port 9898: Connection refused
+command terminated with exit code 7
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get po -w
-NAME            READY   STATUS    RESTARTS   AGE
-readiness-pod   0/1     Running   0          109s
-readiness-pod   1/1     Running   0          113s
+~/k8s-workshops $ kubectl exec -it simple-deploy-7d7ffbb88-x9l4s -- curl -X POST localhost:9898/readyz/enable
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl delete pod readiness-pod
-pod "readiness-pod" deleted
-```
-
-## Expose a deployment
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl apply -f .\4-deployments\deploy.yml
-deployment.apps/simple-deploy created
+~/k8s-workshops $ kubectl get po -w
+NAME                            READY   STATUS    RESTARTS   AGE
+simple-deploy-7d7ffbb88-x9l4s   0/1     Running   0          5m32s
+simple-deploy-7d7ffbb88-x9l4s   1/1     Running   0          6m47s
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl expose deploy simple-deploy --port 9898
-service/simple-deploy exposed
-```
-
-```console
-C:\dev\projects\kubernetes-workshops> kubectl get svc
-NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
-kubernetes      ClusterIP   10.96.0.1        <none>        443/TCP    23h
-simple-deploy   ClusterIP   10.110.128.233   <none>        9898/TCP   6s
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get svc simple-deploy -o yaml
-apiVersion: v1
-kind: Service
-metadata:
-  creationTimestamp: "2019-11-20T21:14:11Z"
-  labels:
-    app: simple
-  name: simple-deploy
-  namespace: default
-  resourceVersion: "5079"
-  selfLink: /api/v1/namespaces/default/services/simple-deploy
-  uid: 8af58cdf-053a-4d66-9a0e-d1538b514c45
-spec:
-  clusterIP: 10.110.128.233
-  ports:
-  - port: 9898
-    protocol: TCP
-    targetPort: 9898
-  selector:
-    app: simple
-  sessionAffinity: None
-  type: ClusterIP
-status:
-  loadBalancer: {}
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl apply -f .\3-pods\pod.yml
-pod/simple-pod created
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl exec -it simple-pod -- curl simple-deploy:9898/
+~/k8s-workshops $ kubectl exec -it simple-pod -- curl simple-cluster-ip:9898
 {
-  "hostname": "simple-deploy-7cf9979c88-qhmbm",
-  "version": "3.1.5",
-  "revision": "78658c03110c23dc011bbec5801f58c6f3f14420",
-  "color": "cyan",
-  "logo": "https://raw.githubusercontent.com/stefanprodan/podinfo/gh-pages/cuddle_clap.gif",
-  "message": "greetings from podinfo v3.1.5",
-  "goos": "linux",
-  "goarch": "amd64",
-  "runtime": "go1.13.4",
-  "num_goroutine": "6",
-  "num_cpu": "2"
-}
+  "hostname": "simple-deploy-7d7ffbb88-x9l4s",
+...
 ```
 
 ```console
-PS C:\dev\projects\kubernetes-workshops> kubectl delete svc simple-deploy
-service "simple-deploy" deleted
-```
-
-## Create a headless service
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get pods
-NAME                             READY   STATUS    RESTARTS   AGE
-simple-deploy-7cf9979c88-qhmbm   1/1     Running   0          105s
-simple-pod                       1/1     Running   0          40s
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl scale deploy simple-deploy --replicas=2
-deployment.apps/simple-deploy scaled
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get pods
-NAME                             READY   STATUS    RESTARTS   AGE
-simple-deploy-7cf9979c88-qhmbm   1/1     Running   0          2m
-simple-deploy-7cf9979c88-qx5fp   1/1     Running   0          4s
-simple-pod                       1/1     Running   0          55s
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl apply -f .\services\headless.yml
-service/simple-headless created
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get services
-NAME              TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)    AGE
-kubernetes        ClusterIP   10.96.0.1    <none>        443/TCP    23h
-simple-headless   ClusterIP   None         <none>        9898/TCP   10s
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get po -o wide
-NAME                             READY   STATUS    RESTARTS   AGE     IP           NODE       NOMINATED NODE   READINESS GATES
-simple-deploy-7cf9979c88-qhmbm   1/1     Running   0          2m42s   172.17.0.4   minikube   <none>           <none>
-simple-deploy-7cf9979c88-qx5fp   1/1     Running   0          46s     172.17.0.6   minikube   <none>           <none>
-simple-pod                       1/1     Running   0          97s     172.17.0.5   minikube   <none>           <none>
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl exec -it simple-pod -- nslookup simple-headless
-nslookup: can't resolve '(null)': Name does not resolve
-
-Name:      simple-headless
-Address 1: 172.17.0.4 172-17-0-4.simple-headless.default.svc.cluster.local
-Address 2: 172.17.0.6 172-17-0-6.simple-headless.default.svc.cluster.local
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl delete svc simple-headless
-service "simple-headless" deleted
-```
-
-## Create a service of type ClusterIP
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl apply -f .\6-services\clusterip.yml
-service/simple-cluster-ip created
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl get svc
-NAME                TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)    AGE
-kubernetes          ClusterIP   10.96.0.1     <none>        443/TCP    23h
-simple-cluster-ip   ClusterIP   10.98.48.83   <none>        9898/TCP   8s
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl exec -it simple-pod -- nslookup simple-cluster-ip
-nslookup: can't resolve '(null)': Name does not resolve
-
-Name:      simple-cluster-ip
-Address 1: 10.98.48.83 simple-cluster-ip.default.svc.cluster.local
-```
-
-```console
-PS C:\dev\projects\kubernetes-workshops> kubectl delete svc simple-cluster-ip
+~/k8s-workshops $ kubectl delete svc simple-cluster-ip
 service "simple-cluster-ip" deleted
+```
+
+## NodePort
+
+```console
+~/k8s-workshops $ kubectl apply -f 6-services/nodeport.yml
+service/simple-node-port created
+```
+
+```console
+~/k8s-workshops $ kubectl get svc
+NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+kubernetes         ClusterIP   10.96.0.1       <none>        443/TCP          3d22h
+simple-node-port   NodePort    10.103.39.176   <none>        9898:30000/TCP   3s
+```
+
+```console
+~/k8s-workshops $ minikube ssh curl localhost:30000
+{
+  "hostname": "simple-deploy-7d7ffbb88-x9l4s",
+...
+```
+
+```console
+~/k8s-workshops $ minikube ip
+192.168.99.106
+```
+
+`http://192.168.99.106:30000/`
+
+```console
+~/k8s-workshops $ kubectl delete svc simple-node-port
+service "simple-node-port" deleted
 ```
