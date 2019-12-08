@@ -114,6 +114,6 @@ env-deploy-7d796f4cdd-pg5d9   1/1     Running   0          18s
 ```
 
 ```console
-~/k8s-workshops $ kubectl delete deploy env-deploy 
+~/k8s-workshops $ kubectl delete deploy env-deploy
 deployment.apps "env-deploy" deleted
 ```

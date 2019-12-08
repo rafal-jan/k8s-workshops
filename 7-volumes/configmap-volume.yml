@@ -1,18 +1,19 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: hp-vol-pod
+  name: configmap-volume
 spec:
   containers:
-  - name: hp-vol-pod
+  - name: configmap-volume
     image: stefanprodan/podinfo
     env:
     - name: PODINFO_CONFIG_PATH
       value: /config/
     volumeMounts:
-    - mountPath: /config/
+    - mountPath: /config/input.json
       name: config
+      subPath: input.json
   volumes:
   - name: config
-    hostPath:
-      path: /home/docker/config/
+    configMap:
+      name: file-cm
