@@ -3,10 +3,9 @@
 Ok, now you're going to use existing docker images to build your own Kubernetes cluster.  
 Few things that may come in handy:  
 
-1. Start minikube with 4GB of memory using this command: `minikube start --memory=4g`.
+1. Start minikube with 4GB of memory using this command: `minikube start --memory=4g --cpus=4`.
 2. Every application needs to be exposed by some kind of load balancer to provide access to pods using DNS.
-3. You can access your minikube dashboard with `minikube dashboard` command.
-4. If you're having troubles resist your urge to decompile provided jars in docker images. Just ask for some help! :)
+3. If you're having troubles resist your urge to decompile provided jars in docker images. Just ask for some help! :)
 
 ## Final expected result
 
@@ -85,7 +84,7 @@ Port: `8888`
 `WORKSHOP_BACKEND_HOST`  
 `WORKSHOP_BACKEND_PORT`  
 `WORKSHOP_USERNAME`  
-`WORKSHOP_PASWORD`
+`WORKSHOP_PASSWORD`
 
 ### Alternative way to provide properties
 
@@ -119,7 +118,7 @@ But if it was too easy or you just want to hang around some more here are some a
 
 ### Don't lose your Mongo data after container restart
 
-Mongo's data is stored in internal directory `/var/lib/mongo`
+Mongo's data is stored in internal directory `/data/db`
 
 ### Scale up your resources
 
@@ -155,9 +154,3 @@ Check Frontend's health by using this GET endpoint
 ```text
 localhost:8888/actuator/health
 ```
-
-### Requests and Limits
-
-The backend and frontend seems too hungry for resources.  
-We believe `320Mi` should be enough maximum value for each pod.
-
