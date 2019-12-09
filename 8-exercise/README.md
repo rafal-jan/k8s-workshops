@@ -9,6 +9,8 @@ Few things that may come in handy:
 
 ## Final expected result
 
+![Result](images/Step0.png)
+
 When you open your browser and navigate to `http://<minikube_ip>:30000` there should be an application displayed. Login using `astronaut/moon` credentials, click on `START` and new rocket appears on the right!
 
 ## Mongo Database
