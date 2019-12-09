@@ -14,6 +14,8 @@ When you open your browser and navigate to `http://<minikube_ip>:30000` there sh
 
 ## Mongo Database
 
+![Mongo](images/Step1.jpg)
+
 ### Essential values
 
 Docker image: `mongo`  
@@ -32,6 +34,8 @@ It looks like you are trying to access MongoDB over HTTP on the native driver po
 
 ## Backend (Spring Boot)
 
+![Backend](images/Step2.jpg)
+
 ### Essential values
 
 Docker image: `k8sworkshopharman/backend-service:latest`  
@@ -45,7 +49,8 @@ Port: `8080`
 ### Alternative way to provide properties
 
 Internal location of properties file:  
-`/app/config/application.properties`  
+`/app/config/application.properties`
+
 Available properties:  
 `spring.data.mongodb.host`  
 `spring.data.mongodb.port`
@@ -68,6 +73,8 @@ Forward a 8080 port to 'load balancer' and access it in your browser.
 
 ## Frontend (Spring Boot)
 
+![Frontend](images/Step3.jpg)
+
 ### Essential values
 
 Docker image: `k8sworkshopharman/frontend-service:latest`  
@@ -83,7 +90,8 @@ Port: `8888`
 ### Alternative way to provide properties
 
 Internal location of properties file:  
-`/app/config/application.properties`  
+`/app/config/application.properties`
+
 Properties possible to set:  
 `workshop.username`  
 `workshop.password`  
@@ -114,6 +122,8 @@ But if it was too easy or you just want to hang around some more here are some a
 Mongo's data is stored in internal directory `/var/lib/mongo`
 
 ### Scale up your resources
+
+![Replicas](images/Step4.jpg)
 
 Your backend and frontend should have 2 replicas each.  
 After you do it, go to frontend and start sending many, many rockets into space. The hostnames should differ.
@@ -150,3 +160,4 @@ localhost:8888/actuator/health
 
 The backend and frontend seems too hungry for resources.  
 We believe `320Mi` should be enough maximum value for each pod.
+
